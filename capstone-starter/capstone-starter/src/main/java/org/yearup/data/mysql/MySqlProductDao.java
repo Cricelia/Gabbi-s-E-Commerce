@@ -23,32 +23,42 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
     {
         List<Product> products = new ArrayList<>();
 
-        String sql = "SELECT * FROM products " +
-                "WHERE (category_id = ? OR ? = -1) " +
-                "   AND (price <= ? OR ? = -1) " +
-                "   AND (color = ? OR ? = '') ";
+        // -- CORRECTIE: Dynamisch opbouwen van de query voor T-SQL en betere performance --
+        StringBuilder sql = new StringBuilder("SELECT * FROM products WHERE 1=1");
+        List<Object> params = new ArrayList<>();
 
-        categoryId = categoryId == null ? -1 : categoryId;
-        minPrice = minPrice == null ? new BigDecimal("-1") : minPrice;
-        maxPrice = maxPrice == null ? new BigDecimal("-1") : maxPrice;
-        color = color == null ? "" : color;
+        if (categoryId != null) {
+            sql.append(" AND category_id = ?");
+            params.add(categoryId);
+        }
+        if (minPrice != null) {
+            sql.append(" AND price >= ?");
+            params.add(minPrice);
+        }
+        if (maxPrice != null) {
+            sql.append(" AND price <= ?");
+            params.add(maxPrice);
+        }
+        if (color != null && !color.isEmpty()) {
+            sql.append(" AND color LIKE ?");
+            params.add("%" + color + "%");
+        }
 
-        try (Connection connection = getConnection())
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql.toString()))
         {
-            PreparedStatement statement = connection.prepareStatement(sql);
-            statement.setInt(1, categoryId);
-            statement.setInt(2, categoryId);
-            statement.setBigDecimal(3, minPrice);
-            statement.setBigDecimal(4, minPrice);
-            statement.setString(5, color);
-            statement.setString(6, color);
+            // Parameters toevoegen aan de statement
+            for (int i = 0; i < params.size(); i++) {
+                statement.setObject(i + 1, params.get(i));
+            }
 
-            ResultSet row = statement.executeQuery();
-
-            while (row.next())
+            try(ResultSet row = statement.executeQuery())
             {
-                Product product = mapRow(row);
-                products.add(product);
+                while (row.next())
+                {
+                    Product product = mapRow(row);
+                    products.add(product);
+                }
             }
         }
         catch (SQLException e)
@@ -59,13 +69,17 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
         return products;
     }
 
+    // ... de rest van de klasse (listByCategoryId, getById, create, update, delete, mapRow) blijft ongewijzigd,
+    // omdat de gebruikte SQL-syntax al compatibel is met T-SQL.
+
+    // (Plaats hier de ongewijzigde code van de andere methodes)
     @Override
     public List<Product> listByCategoryId(int categoryId)
     {
         List<Product> products = new ArrayList<>();
 
         String sql = "SELECT * FROM products " +
-                    " WHERE category_id = ? ";
+                " WHERE category_id = ? ";
 
         try (Connection connection = getConnection())
         {
@@ -139,10 +153,10 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
 
                 if (generatedKeys.next()) {
                     // Retrieve the auto-incremented ID
-                    int orderId = generatedKeys.getInt(1);
+                    int productId = generatedKeys.getInt(1);
 
                     // get the newly inserted category
-                    return getById(orderId);
+                    return getById(productId);
                 }
             }
         }
