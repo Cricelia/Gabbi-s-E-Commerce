@@ -48,6 +48,7 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
              PreparedStatement statement = connection.prepareStatement(sql.toString()))
         {
             // Parameters toevoegen aan de statement
+            //add parameters to the statement
             for (int i = 0; i < params.size(); i++) {
                 statement.setObject(i + 1, params.get(i));
             }
@@ -70,9 +71,12 @@ public class MySqlProductDao extends MySqlDaoBase implements ProductDao
     }
 
     // ... de rest van de klasse (listByCategoryId, getById, create, update, delete, mapRow) blijft ongewijzigd,
+    //the rest of the class (listByCategoryId, getById, create, update, delete, mapRow) remains unchanged,
     // omdat de gebruikte SQL-syntax al compatibel is met T-SQL.
+    //because the used SQL syntax is already compatible with T-SQL.
 
     // (Plaats hier de ongewijzigde code van de andere methodes)
+    //(Place the unchanged code of the other methods here)
     @Override
     public List<Product> listByCategoryId(int categoryId)
     {

@@ -1,6 +1,7 @@
 package org.yearup.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -14,10 +15,11 @@ import java.util.List;
 
 // add the annotations to make this a REST controller
 @RestController
+@CrossOrigin
 // add the annotation to make this controller the endpoint for the following url
     // http://localhost:8080/categories
 @RequestMapping("/categories")
-@CrossOrigin
+
 // add annotation to allow cross site origin requests
 public class CategoriesController {
     private CategoryDao categoryDao;
@@ -55,11 +57,15 @@ public class CategoriesController {
             var category = categoryDao.getById(categoryId);
 
             if (category == null)
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND,  "Category not found");
 
             return category;
+        } catch (EmptyResultDataAccessException e) {
+            // specifically thrown by some DAO methods
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found");
+
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong");
         }
 
     }
